@@ -21,31 +21,34 @@ function createWindow(): void {
 		tabbingIdentifier: "home",
 		width: 1920,
 		height: 1080,
+		titleBarStyle: "hiddenInset",
 		autoHideMenuBar: true,
 		...(process.platform === "linux" ? { icon } : {}),
 	});
 	windows.push(mainWindow);
 
-	// const mainWindowView = new WebContentsView({
-	// 	webPreferences: {
-	// 		preload: join(__dirname, "../preload/index.js"),
-	// 		sandbox: false,
-	// 	},
-	// });
+	const mainWindowView = new WebContentsView({
+		webPreferences: {
+			preload: join(__dirname, "../preload/index.js"),
+			sandbox: false,
+		},
+	});
 	// HMR for renderer base on electron-vite cli.
 	// Load the remote URL for development or the local html file for production.
-	// if (is.dev && process.env.ELECTRON_RENDERER_URL) {
-	// 	mainWindowView.webContents.loadURL(process.env.ELECTRON_RENDERER_URL);
-	// } else {
-	// 	mainWindowView.webContents.loadFile(
-	// 		join(__dirname, "../renderer/index.html"),
-	// 	);
-	// }
-	// mainWindowView.setBounds({ x: 0, y: 0, width: 200, height: 1080 });
-	// mainWindowView.setBackgroundColor("#000");
-	// mainWindowView.webContents.openDevTools();
+	if (is.dev && process.env.ELECTRON_RENDERER_URL) {
+		mainWindowView.webContents.loadURL(process.env.ELECTRON_RENDERER_URL);
+	} else {
+		mainWindowView.webContents.loadFile(
+			join(__dirname, "../renderer/index.html"),
+		);
+	}
+
+	mainWindowView.setBounds({ x: 0, y: 40, width: 1920, height: 1080 });
+	mainWindowView.setBackgroundColor("red");
+	mainWindow.setHasShadow(true);
+	mainWindowView.webContents.openDevTools();
 	// mainWindow.contentView.addChildView(mainWindowView);
-	createTab({ windowId: mainWindow.id, url: "http://google.com" });
+	// createTab({ windowId: mainWindow.id, url: "http://google.com" });
 
 	// mainWindow.addListener("focus", () =>
 	// 	createTab(mainWindow.id, "http://google.com", `tab-${tabs.length + 1}`),
@@ -130,10 +133,14 @@ export const createTab = ({
 		if (!window || !view) {
 			return;
 		}
-		view.setBounds(window.getBounds());
+		const width = window.getBounds().width - 210;
+		const height = window.getBounds().height - 46;
+		view.setBounds({ x: 200, y: 10, width, height });
 	});
 
-	view.setBounds(window.getBounds());
+	const width = window.getBounds().width - 210;
+	const height = window.getBounds().height - 20;
+	view.setBounds({ x: 200, y: 10, width, height });
 
 	if (tabs.length > 0) {
 		const currentTab = tabs.find((tab) => tab.isVisible);
@@ -145,7 +152,17 @@ export const createTab = ({
 		currentTab.view.setVisible(false);
 	}
 
+	view.webContents.openDevTools();
+
+	view.setBorderRadius(20);
+	// view.webContents.on("dom-ready", async () => {
+	// 	await view.webContents.insertCSS(
+	// 		"html { over border: 1px solid black; border-radius: 20px; height: 80vh !important;  }",
+	// 	);
+	// });
+
 	view.webContents.loadURL(url);
+
 	window.contentView.addChildView(view);
 	tabs.push({
 		view,
@@ -187,6 +204,7 @@ app.whenReady().then(() => {
 	});
 	// ipcMain.handle("dialog:openFile", handleFileOpen);
 
+	// createWindow();
 	createWindow();
 
 	app.on("activate", () => {
