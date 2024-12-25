@@ -8,7 +8,7 @@
   "scripts": {
     "format": "biome format --write .",
     "lint": "biome lint .",
-     "check": "biome check --apply .",
+    "check": "biome check --apply .",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
@@ -23,7 +23,8 @@
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
-    "@electron-toolkit/utils": "^3.0.0"
+    "@electron-toolkit/utils": "^3.0.0",
+    "@xstate/store": "^2.6.2"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

@@ -26,26 +26,26 @@ function createWindow(): void {
 	});
 	windows.push(mainWindow);
 
-	const mainWindowView = new WebContentsView({
-		webPreferences: {
-			preload: join(__dirname, "../preload/index.js"),
-			sandbox: false,
-		},
-	});
+	// const mainWindowView = new WebContentsView({
+	// 	webPreferences: {
+	// 		preload: join(__dirname, "../preload/index.js"),
+	// 		sandbox: false,
+	// 	},
+	// });
 	// HMR for renderer base on electron-vite cli.
 	// Load the remote URL for development or the local html file for production.
-	if (is.dev && process.env.ELECTRON_RENDERER_URL) {
-		mainWindowView.webContents.loadURL(process.env.ELECTRON_RENDERER_URL);
-	} else {
-		mainWindowView.webContents.loadFile(
-			join(__dirname, "../renderer/index.html"),
-		);
-	}
-	mainWindowView.setBounds({ x: 0, y: 0, width: 200, height: 1080 });
-	mainWindowView.setBackgroundColor("#000");
-	mainWindowView.webContents.openDevTools();
-	mainWindow.contentView.addChildView(mainWindowView);
-	createTab(mainWindow.id, "http://google.com", `tab-${tabs.length + 1}`);
+	// if (is.dev && process.env.ELECTRON_RENDERER_URL) {
+	// 	mainWindowView.webContents.loadURL(process.env.ELECTRON_RENDERER_URL);
+	// } else {
+	// 	mainWindowView.webContents.loadFile(
+	// 		join(__dirname, "../renderer/index.html"),
+	// 	);
+	// }
+	// mainWindowView.setBounds({ x: 0, y: 0, width: 200, height: 1080 });
+	// mainWindowView.setBackgroundColor("#000");
+	// mainWindowView.webContents.openDevTools();
+	// mainWindow.contentView.addChildView(mainWindowView);
+	createTab({ windowId: mainWindow.id, url: "http://google.com" });
 
 	// mainWindow.addListener("focus", () =>
 	// 	createTab(mainWindow.id, "http://google.com", `tab-${tabs.length + 1}`),
@@ -63,7 +63,15 @@ function createWindow(): void {
 	// });
 }
 
-const switchTab = (tabId: string) => {
+async function handleFileOpen() {
+	console.log("hi");
+	const { canceled, filePaths } = await dialog.showOpenDialog({});
+	if (!canceled) {
+		return filePaths[0];
+	}
+}
+
+export const switchTab = (tabId: string) => {
 	// console.log(tabId);
 	const tabIndex = tabs.findIndex((tabToFind) => tabToFind.tabId === tabId);
 	const tab = tabs[tabIndex];
@@ -89,15 +97,43 @@ const switchTab = (tabId: string) => {
 	tabs[tabIndex].isVisible = true;
 };
 
-const createTab = (windowId: BaseWindow["id"], url, message?: string) => {
-	const view = new WebContentsView();
-	view.setBounds({ x: 200, y: 0, width: 1720, height: 1080 });
-	const window = windows.find((item) => item.id === windowId);
+export const getTabs = () => {
+	const clientTabs = tabs.map((tab) => ({
+		id: tab.tabId,
+		url: tab.url,
+		isActive: tab.isVisible,
+		windowId: tab.windowId,
+	}));
+	return Promise.resolve(clientTabs);
+};
 
+export const createTab = ({
+	windowId,
+	url,
+	message,
+}: { windowId: BaseWindow["id"]; url: string; message?: string }) => {
+	const view = new WebContentsView({
+		webPreferences: {
+			preload: join(__dirname, "../preload/index.js"),
+			sandbox: false,
+		},
+	});
+
+	const window = windows.find((item) => item.id === windowId);
 	if (!window) {
-		console.log("Unable to find current window");
+		console.log("Unable to find window");
 		return;
 	}
+	// view.setBounds(window.getBounds());
+
+	window.on("resize", () => {
+		if (!window || !view) {
+			return;
+		}
+		view.setBounds(window.getBounds());
+	});
+
+	view.setBounds(window.getBounds());
 
 	if (tabs.length > 0) {
 		const currentTab = tabs.find((tab) => tab.isVisible);
@@ -120,23 +156,6 @@ const createTab = (windowId: BaseWindow["id"], url, message?: string) => {
 	});
 };
 
-const getTabs = () => {
-	const clientTabs = tabs.map((tab) => ({
-		id: tab.tabId,
-		url: tab.url,
-		isActive: tab.isVisible,
-		windowId: tab.windowId,
-	}));
-	return Promise.resolve(clientTabs);
-};
-
-async function handleFileOpen() {
-	console.log("hi");
-	const { canceled, filePaths } = await dialog.showOpenDialog({});
-	if (!canceled) {
-		return filePaths[0];
-	}
-}
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -160,7 +179,7 @@ app.whenReady().then(() => {
 	});
 	ipcMain.on("create-tab", (_event, { windowId, url }) => {
 		const message = "from browser";
-		createTab(windowId, url, message);
+		createTab({ windowId, url, message });
 	});
 	ipcMain.handle("get-tabs", getTabs);
 	ipcMain.on("switch-tab", (_event, { tabId }) => {
