@@ -22,6 +22,8 @@ function createWindow(): void {
 		width: 1920,
 		height: 1080,
 		titleBarStyle: "hiddenInset",
+		minWidth: 471,
+		minHeight: 382,
 		autoHideMenuBar: true,
 		...(process.platform === "linux" ? { icon } : {}),
 	});
@@ -43,12 +45,15 @@ function createWindow(): void {
 		);
 	}
 
-	mainWindowView.setBounds({ x: 0, y: 40, width: 1920, height: 1080 });
-	mainWindowView.setBackgroundColor("red");
+	mainWindowView.setBounds({ x: 0, y: 0, width: 1920, height: 1080 });
+	mainWindowView.setBackgroundColor("#FCEADE");
 	mainWindow.setHasShadow(true);
 	mainWindowView.webContents.openDevTools();
-	// mainWindow.contentView.addChildView(mainWindowView);
-	// createTab({ windowId: mainWindow.id, url: "http://google.com" });
+	mainWindow.contentView.addChildView(mainWindowView);
+	createTab({
+		windowId: mainWindow.id,
+		url: "https://google.com",
+	});
 
 	// mainWindow.addListener("focus", () =>
 	// 	createTab(mainWindow.id, "http://google.com", `tab-${tabs.length + 1}`),
@@ -73,6 +78,24 @@ async function handleFileOpen() {
 		return filePaths[0];
 	}
 }
+
+export const goBack = (tabId: string) => {
+	const tab = tabs.find((tab) => tab.tabId === tabId);
+	if (!tab) {
+		console.error("Invalid tabId");
+		return;
+	}
+	tab.view.webContents.navigationHistory.goBack();
+};
+
+export const goForward = (tabId: string) => {
+	const tab = tabs.find((tab) => tab.tabId === tabId);
+	if (!tab) {
+		console.error("Invalid tabId");
+		return;
+	}
+	tab.view.webContents.navigationHistory.goForward();
+};
 
 export const switchTab = (tabId: string) => {
 	// console.log(tabId);
@@ -134,13 +157,9 @@ export const createTab = ({
 			return;
 		}
 		const width = window.getBounds().width - 210;
-		const height = window.getBounds().height - 46;
+		const height = window.getBounds().height - 20;
 		view.setBounds({ x: 200, y: 10, width, height });
 	});
-
-	const width = window.getBounds().width - 210;
-	const height = window.getBounds().height - 20;
-	view.setBounds({ x: 200, y: 10, width, height });
 
 	if (tabs.length > 0) {
 		const currentTab = tabs.find((tab) => tab.isVisible);
@@ -151,18 +170,19 @@ export const createTab = ({
 		currentTab.isVisible = false;
 		currentTab.view.setVisible(false);
 	}
+	const width = window.getBounds().width - 210;
+	const height = window.getBounds().height - 20;
 
+	view.setBackgroundColor("#FCEADE");
+	view.setBounds({ x: 200, y: 10, width, height });
 	view.webContents.openDevTools();
-
-	view.setBorderRadius(20);
-	// view.webContents.on("dom-ready", async () => {
-	// 	await view.webContents.insertCSS(
-	// 		"html { over border: 1px solid black; border-radius: 20px; height: 80vh !important;  }",
-	// 	);
-	// });
-
+	view.setBorderRadius(8);
 	view.webContents.loadURL(url);
-
+	view.webContents.on("did-finish-load", async () => {
+		await view.webContents.insertCSS(
+			"html {box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75); }",
+		);
+	});
 	window.contentView.addChildView(view);
 	tabs.push({
 		view,
@@ -201,6 +221,12 @@ app.whenReady().then(() => {
 	ipcMain.handle("get-tabs", getTabs);
 	ipcMain.on("switch-tab", (_event, { tabId }) => {
 		switchTab(tabId);
+	});
+	ipcMain.on("go-back", (_event, { tabId }) => {
+		goBack(tabId);
+	});
+	ipcMain.on("go-forward", (_event, { tabId }) => {
+		goForward(tabId);
 	});
 	// ipcMain.handle("dialog:openFile", handleFileOpen);
 

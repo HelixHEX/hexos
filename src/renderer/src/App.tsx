@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import type { ClientTab } from '../../types';
-import './assets/app.css';
+import './assets/App.css';
 import { useHotkeys } from 'react-hotkeys-hook'
 import { Input } from './components/ui/input';
+import { Button } from './components/ui/button';
+import WebViewBackground from './components/webView';
+import Navigation from './components/navigation';
 // import { Input } from './components/ui/input';
 
 const getTabs = async (): Promise<ClientTab[]> => {
@@ -60,6 +63,8 @@ function App(): JSX.Element {
     setSearch(url)
   };
 
+
+
   const switchTab = async (tabId: string) => {
     setActiveTab(tabId);
     ipcHandle.send('switch-tab', { tabId });
@@ -72,35 +77,40 @@ function App(): JSX.Element {
     console.log(tabs)
   }, [tabs])
 
+  const handleKeyDown = (tabId: string) => (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      switchTab(tabId);
+    }
+  };
+
   return (
-    <div className='main' style={{ width: '100%', display: 'flex', paddingTop: 40, height: '100vh', backgroundColor: '#FCEADE' }}>
-
-      <div className="sidebar" style={{ color: 'white', backgroundColor: '#FCEADE', height: '100%', width: 200 }}>
-        <form onSubmit={addTab}>
-          <Input className='w-full' style={{ width: '90%', padding: 6, justifySelf: 'center' }} value={search} onChange={e => setSearch(e.target.value)} />
-
-        </form>
-        {/* <button type='button' onClick={addTab} className="add-tab-btn">
-          search
-        </button> */}
-        <ul className='no-bullets'>
-          {tabs.map((tab) => (
-            //biome-ignore lint:
-            <li
-              key={tab.id}
-              className={'tab'}
-              style={{ backgroundColor: tab.isActive ? '#fcfcfc' : '#FCEADE' }}
-              onClick={() => switchTab(tab.id)}
-            >
-              {tab.url}
-            </li>
-          ))}
-        </ul>
-
-
-
+    <div className='w-full flex h-screen bg-[#f5f0ea]'>
+      <div className='h-full'>
+        <Navigation tabId={activeTab} />
+        <div className=" w-[200px] p-2 ">
+          <form onSubmit={addTab}>
+            <Input className='bg-[#eae3de] border-none' value={search} onChange={e => setSearch(e.target.value)} />
+          </form>
+          <ul className='no-bullets'>
+            {tabs.map((tab) => (
+              <li key={tab.id}>
+                <Button
+                  type="button"
+                  className={`shadow-none rounded-lg text-black mt-2 ${tab.isActive ? 'hover:bg-[#f6f6f5] shadow-sm' : 'hover:bg-[#eae5e0]'}  ${tab.isActive ? 'bg-[#f6f6f5]' : 'bg-[#f5efe8]'}`}
+                  onClick={() => switchTab(tab.id)}
+                  onKeyDown={handleKeyDown(tab.id)}
+                  role="tab"
+                  aria-selected={tab.isActive}
+                >
+                  {tab.url}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
-
+      {/* <WebViewBackground /> */}
     </div>
   )
 }

@@ -3,16 +3,11 @@
 }
 .no-bullets {
 	list-style-type: none;
-	padding: 8px;
-	margin: 0;
 	font-family: "Courier New", Courier, monospace;
 	font-size: 14px;
 }
 
-.addressbar {
-	width: 80%;
-	padding: 4px;
-}
+
 .tab {
 	margin-top: 10px;
 	padding: 10px;
